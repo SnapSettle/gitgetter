@@ -1,0 +1,21 @@
+# treefmt.toml — project-wide formatting rules
+# Run:  nix fmt   (via treefmt-nix wrapper in flake.nix)
+
+[formatter.go]
+command  = "gofmt"
+options  = ["-w"]
+includes = ["*.go"]
+
+[formatter.nix]
+command  = "nixpkgs-fmt"
+includes = ["*.nix"]
+
+[formatter.prettier]
+command  = "prettier"
+options  = ["--write"]
+includes = [
+  "*.md",
+  "*.json",
+  "*.yaml",
+  "*.yml",
+]
