@@ -48,7 +48,13 @@ jobs:
 
       - name: Sync Git Environment
         run: |
-          git fetch --tags --force
+          # Prune any local tags that don't exist on remote
+          git fetch --prune --prune-tags origin
+
+          # Force sync all valid remote tags
+          git fetch --tags --force origin master
+
+          # Force pull to make sure history matches origin perfectly
           git pull origin master --ff-only
 
       - uses: actions/setup-node@v4
