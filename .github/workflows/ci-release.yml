@@ -78,7 +78,7 @@ jobs:
               "@semantic-release/commit-analyzer" \
               "@semantic-release/release-notes-generator" \
               "@semantic-release/changelog"
-          
+
           # 2. Check if a new version step updated the CHANGELOG.md file
           if [ -f CHANGELOG.md ] && ! git diff --exit-code CHANGELOG.md > /dev/null; then
             echo "New release generated. Running Nix formatting fixes..."
