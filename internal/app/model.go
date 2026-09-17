@@ -63,6 +63,18 @@ const (
 	ModeEditRemote
 )
 
+// modeUsesSignoff reports whether the given input mode creates/amends a
+// commit and therefore supports toggling --signoff.
+func modeUsesSignoff(mode InputMode) bool {
+	return mode == ModeCommit || mode == ModeAmend || mode == ModeSquash
+}
+
+// modeUsesCommitHistory reports whether the given input mode is writing a
+// commit message and therefore supports ↑/↓ recall of past commit messages.
+func modeUsesCommitHistory(mode InputMode) bool {
+	return mode == ModeCommit || mode == ModeAmend || mode == ModeSquash
+}
+
 // ── Notifications ─────────────────────────────────────────────────────────────
 
 type NotifyLevel int
@@ -119,6 +131,11 @@ type Model struct {
 	inputLabel string
 	inputHint  string
 	textInput  textinput.Model
+	signoff    bool // whether the pending commit/amend/squash should be signed off
+
+	// Commit message history recall (↑/↓ while composing a commit message)
+	histIdx   int    // index into m.commits currently shown; -1 = not navigating (showing histDraft)
+	histDraft string // what the user had typed before they started navigating history
 
 	// Multi-step operation context
 	pendingRemoteName string
@@ -365,48 +382,10 @@ func (m *Model) openInput(mode InputMode, label, placeholder string) {
 	m.inputMode = mode
 	m.inputLabel = label
 	m.inputHint = placeholder
+	m.signoff = false
+	m.histIdx = -1
+	m.histDraft = ""
 	m.textInput.Reset()
 	m.textInput.Placeholder = placeholder
 	m.textInput.Focus()
-}
-
-// bodyClickItem maps a body-relative click row to a list item index.
-// bodyStartRow is 2 (tab + tab-border above, bottom bar below).
-func (m Model) bodyClickItem(relRow int) int {
-	bH := m.bodyHeight()
-	listLen := m.listLen()
-	if listLen == 0 || bH <= 0 || relRow < 0 {
-		return -1
-	}
-
-	linesPerItem := 1
-	cursorLine := m.cursor[m.tab]
-	if m.tab == TabLog {
-		linesPerItem = 2
-		cursorLine = m.cursor[m.tab] * 2
-	}
-
-	totalLines := listLen * linesPerItem
-	start := cursorLine - bH/2
-	if start < 0 {
-		start = 0
-	}
-	end := start + bH
-	if end > totalLines {
-		end = totalLines
-		start = end - bH
-		if start < 0 {
-			start = 0
-		}
-	}
-
-	clicked := start + relRow
-	if clicked < 0 || clicked >= totalLines {
-		return -1
-	}
-	item := clicked / linesPerItem
-	if item >= listLen {
-		return listLen - 1
-	}
-	return item
 }

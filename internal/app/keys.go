@@ -28,6 +28,7 @@ type KeyMap struct {
 	QuickCommit key.Binding // stage all + commit from any tab
 	Amend       key.Binding
 	Squash      key.Binding
+	Signoff     key.Binding // toggle --signoff while writing a commit message
 
 	// Git — remote (all work globally from any tab)
 	Push      key.Binding
@@ -131,6 +132,10 @@ var Keys = KeyMap{
 	Squash: key.NewBinding(
 		key.WithKeys("x"),
 		key.WithHelp("x", "squash selected"),
+	),
+	Signoff: key.NewBinding(
+		key.WithKeys("ctrl+s"),
+		key.WithHelp("ctrl+s", "toggle signoff"),
 	),
 
 	// Remote (global)

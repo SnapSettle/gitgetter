@@ -12,7 +12,7 @@ import (
 
 func main() {
 	if !git.IsGitRepo() {
-		fmt.Fprintln(os.Stderr, "✗  Not a git repository — run gitgetter from inside a git project.")
+		fmt.Fprintln(os.Stderr, "✗  Not a git repository — run me inside a git project.")
 		os.Exit(1)
 	}
 

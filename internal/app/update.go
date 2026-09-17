@@ -26,11 +26,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 
-	// ── Mouse ─────────────────────────────────────────────────────────────────
-	case tea.MouseMsg:
-		nm, cmd := m.handleMouseMsg(msg)
-		return nm, tea.Batch(append(cmds, cmd)...)
-
 	// ── Data responses ────────────────────────────────────────────────────────
 	case msgStatus:
 		m.status = msg.v
@@ -124,91 +119,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
-}
-
-// ── Mouse handler ─────────────────────────────────────────────────────────────
-
-func (m Model) handleMouseMsg(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	// ── Wheel scroll (works everywhere, no action/button check needed) ────────
-	if msg.Button == tea.MouseButtonWheelUp {
-		if m.cur() > 0 {
-			m.setCur(m.cur() - 1)
-		}
-		return m, nil
-	}
-	if msg.Button == tea.MouseButtonWheelDown {
-		if m.cur() < m.listLen()-1 {
-			m.setCur(m.cur() + 1)
-		}
-		return m, nil
-	}
-
-	// Only process left-button releases for clicks
-	if msg.Action != tea.MouseActionRelease || msg.Button != tea.MouseButtonLeft {
-		return m, nil
-	}
-
-	// Click anywhere dismisses notification
-	if m.note != nil {
-		m.note = nil
-		return m, nil
-	}
-
-	// Close help dialog on click
-	if m.showHelp {
-		m.showHelp = false
-		return m, nil
-	}
-
-	switch {
-	// Tab bar is now at Y=0 (no title bar above it)
-	case msg.Y == 0:
-		m.handleTabBarClick(msg.X)
-
-	// Bottom bar is at Y = height-1; right side toggles help
-	case msg.Y == m.height-1:
-		if msg.X >= m.width-8 {
-			m.showHelp = !m.showHelp
-		}
-
-	// Body starts at Y=2 (tab labels=0, tab border=1)
-	default:
-		const bodyStart = 2
-		bH := m.bodyHeight()
-		cW := m.contentW() // only clicks inside the content area (not keybind panel)
-		if msg.Y >= bodyStart && msg.Y < bodyStart+bH && msg.X < cW {
-			item := m.bodyClickItem(msg.Y - bodyStart)
-			if item >= 0 && item < m.listLen() {
-				m.setCur(item)
-			}
-		}
-	}
-
-	return m, nil
-}
-
-func (m *Model) handleTabBarClick(x int) {
-	visible := m.visibleTabs()
-	pos := 0
-	for i, tab := range visible {
-		meta := tabMeta[tab]
-		label := meta.icon + meta.name
-		var w int
-		if tab == m.tab {
-			w = lipglossWidth(activeTabStyle(label))
-		} else {
-			w = lipglossWidth(inactiveTabStyle(label))
-		}
-		if x >= pos && x < pos+w {
-			m.tab = tab
-			m.clampCur()
-			return
-		}
-		pos += w
-		if i < len(visible)-1 {
-			pos += 1 // divider char
-		}
-	}
 }
 
 // ── Normal mode ───────────────────────────────────────────────────────────────
@@ -655,6 +565,45 @@ func (m Model) handleInputKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyEnter:
 		return m.submitInput()
 	}
+
+	// Toggle --signoff for commit/amend/squash inputs.
+	if modeUsesSignoff(m.inputMode) && key.Matches(msg, Keys.Signoff) {
+		m.signoff = !m.signoff
+		return m, nil
+	}
+
+	// ↑/↓ recall previous/next commit messages while composing one.
+	// (Checked against msg.Type, not Keys.Up/Down, so the "k"/"j" vim
+	// aliases still type normally instead of triggering recall.)
+	if modeUsesCommitHistory(m.inputMode) && len(m.commits) > 0 {
+		switch msg.Type {
+		case tea.KeyUp:
+			if m.histIdx == -1 {
+				m.histDraft = m.textInput.Value()
+			}
+			if m.histIdx < len(m.commits)-1 {
+				m.histIdx++
+				m.textInput.SetValue(m.commits[m.histIdx].Message)
+				m.textInput.CursorEnd()
+			}
+			return m, nil
+		case tea.KeyDown:
+			if m.histIdx == -1 {
+				return m, nil
+			}
+			m.histIdx--
+			if m.histIdx == -1 {
+				m.textInput.SetValue(m.histDraft)
+			} else {
+				m.textInput.SetValue(m.commits[m.histIdx].Message)
+			}
+			m.textInput.CursorEnd()
+			return m, nil
+		}
+	}
+
+	// Every other key is forwarded to the text field (←/→ move the cursor
+	// within it, letters/backspace edit it, etc).
 	ti, cmd := m.textInput.Update(msg)
 	m.textInput = ti
 	return m, cmd
@@ -664,10 +613,14 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	val := strings.TrimSpace(m.textInput.Value())
 	mode := m.inputMode
 	n := m.selCount()
+	signoff := m.signoff
 
 	m.inputMode = ModeNormal
 	m.textInput.Blur()
 	m.clearSel()
+	m.signoff = false
+	m.histIdx = -1
+	m.histDraft = ""
 
 	switch mode {
 	case ModeCommit:
@@ -675,7 +628,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 			return m, notify("Commit message cannot be empty", NotifyError)
 		}
 		return m, func() tea.Msg {
-			if err := git.CreateCommit(val); err != nil {
+			if err := git.CreateCommit(val, signoff); err != nil {
 				return msgNotify{"Commit failed: " + err.Error(), NotifyError}
 			}
 			// No leading "✓" — the notification panel already adds the success icon
@@ -684,7 +637,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 
 	case ModeAmend:
 		return m, func() tea.Msg {
-			if err := git.AmendCommit(val); err != nil {
+			if err := git.AmendCommit(val, signoff); err != nil {
 				return msgNotify{"Amend failed: " + err.Error(), NotifyError}
 			}
 			return msgNotify{"Commit amended", NotifySuccess}
@@ -707,7 +660,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		}
 		count := n
 		return m, func() tea.Msg {
-			if err := git.SquashCommits(count, val); err != nil {
+			if err := git.SquashCommits(count, val, signoff); err != nil {
 				return msgNotify{"Squash failed: " + err.Error(), NotifyError}
 			}
 			return msgNotify{fmt.Sprintf("Squashed %d commits: %s", count, val), NotifySuccess}

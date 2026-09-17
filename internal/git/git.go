@@ -269,25 +269,37 @@ func StageAll() error {
 
 // ── Commits ───────────────────────────────────────────────────────────────────
 
-func CreateCommit(message string) error {
-	_, err := run("commit", "-m", message)
-	return err
-}
-
-func AmendCommit(message string) error {
-	if message == "" {
-		_, err := run("commit", "--amend", "--no-edit")
-		return err
+// CreateCommit creates a commit with the given message. When signoff is true,
+// a Signed-off-by trailer is added via `git commit --signoff`.
+func CreateCommit(message string, signoff bool) error {
+	args := []string{"commit", "-m", message}
+	if signoff {
+		args = append(args, "--signoff")
 	}
-	_, err := run("commit", "--amend", "-m", message)
+	_, err := run(args...)
 	return err
 }
 
-func SquashCommits(n int, message string) error {
+// AmendCommit amends HEAD. When signoff is true, `--signoff` is added.
+func AmendCommit(message string, signoff bool) error {
+	args := []string{"commit", "--amend"}
+	if message == "" {
+		args = append(args, "--no-edit")
+	} else {
+		args = append(args, "-m", message)
+	}
+	if signoff {
+		args = append(args, "--signoff")
+	}
+	_, err := run(args...)
+	return err
+}
+
+func SquashCommits(n int, message string, signoff bool) error {
 	if _, err := run("reset", "--soft", fmt.Sprintf("HEAD~%d", n)); err != nil {
 		return fmt.Errorf("reset failed: %w", err)
 	}
-	if err := CreateCommit(message); err != nil {
+	if err := CreateCommit(message, signoff); err != nil {
 		return fmt.Errorf("commit failed: %w", err)
 	}
 	return nil

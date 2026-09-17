@@ -10,11 +10,7 @@ import (
 	"gitgetter/internal/styles"
 )
 
-// ── Shared helpers (used by both view and update) ─────────────────────────────
-
-func activeTabStyle(label string) string   { return styles.ActiveTab.Render(label) }
-func inactiveTabStyle(label string) string { return styles.Tab.Render(label) }
-func lipglossWidth(s string) int           { return lipgloss.Width(s) }
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 func wordWrap(s string, width int) string {
 	if width <= 4 {
@@ -106,7 +102,6 @@ func navBindings() [][2]string {
 		{"g/G", "top/bot"},
 		{"ctrl+u/d", "page"},
 		{"tab/⇧tab", "switch"},
-		{"scroll", "scroll"},
 		{"r", "refresh"},
 		{"?", "help"},
 		{"q", "quit"},
@@ -139,18 +134,18 @@ func (m Model) View() string {
 
 	// Normal view — title bar is now at the BOTTOM
 	var rows []string
-	rows = append(rows, m.viewTabBar()) // Y=0: tab labels (mouse-clickable)
+	rows = append(rows, m.viewTabBar()) // Y=0: tab labels
 	rows = append(rows, m.viewBody())   // Y=2+: body + keybind panel on right
 	if m.note != nil {
 		rows = append(rows, m.viewNotifyPanel()) // notification replaces bottom bar
 	} else {
-		rows = append(rows, m.viewBottomBar()) // Y=H-1: branch/status + [?] button
+		rows = append(rows, m.viewBottomBar()) // Y=H-1: branch/status + [?] hint
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
 
-// ── Tab bar (Y=0, mouse-clickable) ───────────────────────────────────────────
+// ── Tab bar (Y=0) ─────────────────────────────────────────────────────────────
 
 func (m Model) viewTabBar() string {
 	visible := m.visibleTabs()
@@ -179,7 +174,7 @@ func (m Model) viewTabBar() string {
 		Render(bar)
 }
 
-// ── Bottom bar (moved from top) — branch info + [?] button ───────────────────
+// ── Bottom bar (moved from top) — branch info + [?] hint ─────────────────────
 
 func (m Model) viewBottomBar() string {
 	logo := styles.TitleLogo.Render(" gitgetter")
@@ -203,7 +198,6 @@ func (m Model) viewBottomBar() string {
 
 	left := logo + info
 
-	// Help button — right-aligned, click target for mouse (X >= width-8)
 	helpBtn := "  " + styles.HelpKey.Render("?") + " " + styles.HelpDesc.Render("help") + " "
 
 	gap := m.width - lipgloss.Width(left) - lipgloss.Width(helpBtn)
@@ -338,6 +332,12 @@ func (m Model) viewHelpDialog() string {
 		{"space", "toggle select"},
 		{"x", "squash selected"},
 		{"A", "amend HEAD"},
+	}) + "\n" + buildSection("COMMIT INPUT", [][2]string{
+		{"←→", "move cursor"},
+		{"↑↓", "recall prev/next msg"},
+		{"ctrl+s", "toggle signoff"},
+		{"↵", "confirm"},
+		{"esc", "cancel"},
 	}) + "\n" + buildSection("GLOBAL", [][2]string{
 		{"C", "stage all & commit"},
 		{"p", "push"},
@@ -369,16 +369,12 @@ func (m Model) viewHelpDialog() string {
 		{"ctrl+u/d", "page up/down"},
 		{"g/G", "top/bottom"},
 		{"tab/⇧tab", "switch tabs"},
-		{"scroll", "scroll list"},
-		{"click tab", "switch tab"},
-		{"click item", "move cursor"},
 		{"?", "toggle this help"},
 	})
 
 	var body string
 	if twoCol {
 		left := lipgloss.NewStyle().Width(colW).Render(leftContent)
-		// right := lipgloss.NewStyle().Width(colW).Render(rightContent)
 		body = lipgloss.JoinHorizontal(lipgloss.Top,
 			left,
 			lipgloss.NewStyle().
@@ -742,10 +738,24 @@ func (m Model) viewInputDialog() string {
 	hint := styles.Muted.Render(m.inputHint)
 	input := m.textInput.View()
 
-	body := lipgloss.JoinVertical(lipgloss.Left,
-		label, hint, "", input, "",
-		styles.HelpDesc.Render("↵ confirm  ·  esc cancel"),
-	)
+	footerHelp := "↵ confirm  ·  esc cancel"
+	if modeUsesCommitHistory(m.inputMode) {
+		footerHelp = "↵ confirm  ·  esc cancel  ·  ↑↓ recall  ·  ctrl+s signoff"
+	}
+
+	rows := []string{label, hint, "", input}
+
+	if modeUsesSignoff(m.inputMode) {
+		signoffLine := styles.Muted.Render("Signed-off-by trailer: ") + styles.PillGray.Render(" off ")
+		if m.signoff {
+			signoffLine = styles.Muted.Render("Signed-off-by trailer: ") + styles.PillGreen.Render(" on ")
+		}
+		rows = append(rows, "", signoffLine)
+	}
+
+	rows = append(rows, "", styles.HelpDesc.Render(footerHelp))
+
+	body := lipgloss.JoinVertical(lipgloss.Left, rows...)
 	return styles.FocusedPanel.Width(68).Render(body)
 }
 
