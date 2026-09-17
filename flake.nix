@@ -84,7 +84,7 @@
             shellHook = ''
               echo ""
               echo "  ╭───────────────────────────────────────╮"
-              echo "  │   gitgetter dev shell  🐙              │"
+              echo "  │   gitgetter dev shell  🐙             │"
               echo "  │                                       │"
               echo "  │   go build  ./...   – build           │"
               echo "  │   go run    .       – run             │"
