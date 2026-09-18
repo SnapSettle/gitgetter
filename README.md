@@ -128,7 +128,3 @@ gitgetter/
 ├── flake.nix                 Nix flake (devShell, package, formatter)
 └── treefmt.toml              treefmt formatting rules
 ```
-
-## License
-
-MIT
