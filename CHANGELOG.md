@@ -1,16 +1,14 @@
 # 1.0.0 (2026-09-18)
 
-
 ### Bug Fixes
 
-* improve git sync process in CI workflow and remove outdated changelog ([4236e14](https://github.com/SnapSettle/gitgetter/commit/4236e1412cb3d4e041fe4eee687433a9827e3718))
-* remove false license from README ([7e867c3](https://github.com/SnapSettle/gitgetter/commit/7e867c38cf1ba6f2a10e04253d1dc72ca4730e65))
-
+- improve git sync process in CI workflow and remove outdated changelog ([4236e14](https://github.com/SnapSettle/gitgetter/commit/4236e1412cb3d4e041fe4eee687433a9827e3718))
+- remove false license from README ([7e867c3](https://github.com/SnapSettle/gitgetter/commit/7e867c38cf1ba6f2a10e04253d1dc72ca4730e65))
 
 ### Features
 
-* add CI & Release pipeline workflow ([597e89f](https://github.com/SnapSettle/gitgetter/commit/597e89f7a5142919e48a23c0defa742c00ad3f65))
-* add signoff option for commits and enhance input handling ([3db9128](https://github.com/SnapSettle/gitgetter/commit/3db91288bba2b9a01e69c6883d8638e618794fb3))
+- add CI & Release pipeline workflow ([597e89f](https://github.com/SnapSettle/gitgetter/commit/597e89f7a5142919e48a23c0defa742c00ad3f65))
+- add signoff option for commits and enhance input handling ([3db9128](https://github.com/SnapSettle/gitgetter/commit/3db91288bba2b9a01e69c6883d8638e618794fb3))
 
 # 1.0.0 (2026-06-10)
 
