@@ -68,6 +68,14 @@ jobs:
 
       - uses: cachix/install-nix-action@v31
 
+      - name: Build Binaries
+        run: |
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 go build -o dist/myapp-linux-amd64 .
+          GOOS=darwin GOARCH=amd64 go build -o dist/myapp-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o dist/myapp-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -o dist/myapp-windows-amd64.exe .
+
       - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,3 +88,4 @@ jobs:
             -p @semantic-release/commit-analyzer \
             -p @semantic-release/release-notes-generator \
             semantic-release
+
