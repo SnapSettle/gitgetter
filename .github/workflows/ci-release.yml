@@ -71,10 +71,10 @@ jobs:
       - name: Build Binaries
         run: |
           mkdir -p dist
-          GOOS=linux GOARCH=amd64 go build -o dist/myapp-linux-amd64 .
-          GOOS=darwin GOARCH=amd64 go build -o dist/myapp-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o dist/myapp-darwin-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o dist/myapp-windows-amd64.exe .
+          GOOS=linux GOARCH=amd64 go build -o dist/gitgetter-linux-amd64 .
+          GOOS=darwin GOARCH=amd64 go build -o dist/gitgetter-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o dist/gitgetter-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -o dist/gitgetter-windows-amd64.exe .
 
       - name: Run Semantic Release
         env:
