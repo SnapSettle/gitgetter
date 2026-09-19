@@ -151,6 +151,12 @@ var (
 			Foreground(ColorBg).
 			Bold(true).
 			Padding(0, 1)
+
+	NotifHint = lipgloss.NewStyle().
+			Background(AccentPurple).
+			Foreground(ColorBg).
+			Bold(true).
+			Padding(0, 1)
 )
 
 // ── Section titles ────────────────────────────────────────────────────────────

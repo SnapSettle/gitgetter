@@ -83,12 +83,16 @@ const (
 	NotifySuccess NotifyLevel = iota
 	NotifyError
 	NotifyInfo
+	// NotifyHint is for persistent contextual help (e.g. "press X to do Y").
+	// Unlike the other levels it is never auto-dismissed by a timer — it
+	// only goes away once the user presses a key — so it never disappears
+	// out from under them while they're still reading it.
+	NotifyHint
 )
 
 type Notification struct {
 	Message string
 	Level   NotifyLevel
-	Expiry  time.Time
 }
 
 // ── Tea messages ─────────────────────────────────────────────────────────────
@@ -104,7 +108,7 @@ type (
 		text  string
 		level NotifyLevel
 	}
-	msgClearNote    struct{}
+	msgClearNote struct{ gen int }
 	msgStageAllDone struct{}
 )
 
@@ -147,7 +151,8 @@ type Model struct {
 	confirmAction func() tea.Cmd
 
 	// Notification (replaces bottom bar when set)
-	note *Notification
+	note    *Notification
+	noteGen int // bumped on every new note so a stale auto-dismiss timer can't clear a newer one
 
 	spinner spinner.Model
 	loading bool
@@ -238,8 +243,8 @@ func notify(text string, level NotifyLevel) tea.Cmd {
 	return func() tea.Msg { return msgNotify{text, level} }
 }
 
-func clearNoteAfter(d time.Duration) tea.Cmd {
-	return tea.Tick(d, func(time.Time) tea.Msg { return msgClearNote{} })
+func clearNoteAfter(d time.Duration, gen int) tea.Cmd {
+	return tea.Tick(d, func(time.Time) tea.Msg { return msgClearNote{gen} })
 }
 
 // ── Visible tabs ──────────────────────────────────────────────────────────────

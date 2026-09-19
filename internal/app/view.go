@@ -720,6 +720,9 @@ func (m Model) viewNotifyPanel() string {
 	case NotifyError:
 		icon = "✗"
 		msgStyle = styles.NotifError
+	case NotifyHint:
+		icon = "⌨"
+		msgStyle = styles.NotifHint
 	default:
 		icon = "ℹ"
 		msgStyle = styles.NotifInfo

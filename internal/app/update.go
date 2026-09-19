@@ -59,33 +59,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case msgErr:
 		m.loading = false
+		m.noteGen++
 		m.note = &Notification{
 			Message: msg.err.Error(),
 			Level:   NotifyError,
-			Expiry:  time.Now().Add(8 * time.Second),
 		}
-		cmds = append(cmds, clearNoteAfter(8*time.Second))
+		cmds = append(cmds, clearNoteAfter(8*time.Second, m.noteGen))
 
 	case msgNotify:
+		m.noteGen++
 		m.note = &Notification{
 			Message: msg.text,
 			Level:   msg.level,
-			Expiry:  time.Now().Add(5 * time.Second),
 		}
-		d := 5 * time.Second
-		if msg.level == NotifyError {
-			d = 8 * time.Second
-		} else if msg.level == NotifyInfo {
-			d = 3 * time.Second
+		// NotifyHint never auto-dismisses — it sticks around until the user
+		// presses a key, which is when it's actually done being useful.
+		if msg.level != NotifyHint {
+			d := 5 * time.Second
+			if msg.level == NotifyError {
+				d = 8 * time.Second
+			} else if msg.level == NotifyInfo {
+				d = 3 * time.Second
+			}
+			cmds = append(cmds, clearNoteAfter(d, m.noteGen))
 		}
-		cmds = append(cmds, clearNoteAfter(d))
 		if msg.level == NotifySuccess {
 			m.loading = true
 			cmds = append(cmds, doRefreshAll())
 		}
 
 	case msgClearNote:
-		m.note = nil
+		// A notification that arrived after this timer was scheduled has
+		// already bumped noteGen, so an old, late-firing timer can't wipe
+		// out a newer message out from under the user.
+		if msg.gen == m.noteGen {
+			m.note = nil
+		}
 
 	case msgStageAllDone:
 		m.loading = false
@@ -449,7 +458,7 @@ func (m Model) handleRemoteKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if cur < nActions {
 			return m.execRemoteAction(cur)
 		} else if cur < nActions+nRemotes {
-			return m, notify("e=edit URL  R=rename  d=delete", NotifyInfo)
+			return m, notify("e=edit URL  R=rename  d=delete", NotifyHint)
 		} else {
 			m.openInput(ModeAddRemote, "Remote name", "origin")
 		}
