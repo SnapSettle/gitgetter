@@ -259,6 +259,14 @@ func (m Model) visibleTabs() []ViewTab {
 
 // ── Layout helpers ────────────────────────────────────────────────────────────
 
+// Minimum terminal size gitgetter's layout can render without breaking down
+// (column truncation going negative, fixed-width dialogs no longer fitting,
+// etc). Below this, View() shows a resize notice instead of the normal UI.
+const (
+	minTermWidth  = 60
+	minTermHeight = 16
+)
+
 // keybindPanelW returns the width of the right-side keybind panel (0 if narrow terminal).
 func (m Model) keybindPanelW() int {
 	if m.width < 90 {

@@ -405,12 +405,20 @@ func (m Model) handleBranchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if b.IsCurrent {
 			return m, notify("Already on branch: "+b.Name, NotifyInfo)
 		}
-		name := b.Name
+		target := b.Name
+		if b.IsRemote {
+			// Checking out the remote ref directly (e.g. "origin/feature-x")
+			// leaves HEAD detached. Strip the remote prefix so git's own
+			// DWIM behavior creates/switches to a local tracking branch
+			// instead — the ref stays fully checked-out-able either way.
+			target = git.LocalNameForRemote(b.Name)
+		}
+		displayName := b.Name
 		return m, func() tea.Msg {
-			if err := git.CheckoutBranch(name); err != nil {
+			if err := git.CheckoutBranch(target); err != nil {
 				return msgNotify{"Checkout failed: " + err.Error(), NotifyError}
 			}
-			return msgNotify{"Checked out: " + name, NotifySuccess}
+			return msgNotify{"Checked out: " + displayName, NotifySuccess}
 		}
 
 	case key.Matches(msg, Keys.NewBranch):
@@ -421,6 +429,9 @@ func (m Model) handleBranchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		b := m.branches[m.cur()]
+		if b.IsRemote {
+			return m, notify("Can't rename a remote-tracking ref — check it out first", NotifyInfo)
+		}
 		m.renamingBranch = b.Name
 		m.openInput(ModeRename, fmt.Sprintf("Rename \"%s\" to", b.Name), b.Name)
 
@@ -431,6 +442,9 @@ func (m Model) handleBranchKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		b := m.branches[m.cur()]
 		if b.IsCurrent {
 			return m, notify("Cannot delete the current branch", NotifyError)
+		}
+		if b.IsRemote {
+			return m, notify("Can't delete a remote-tracking ref locally", NotifyInfo)
 		}
 		name := b.Name
 		m.confirmMsg = fmt.Sprintf("Delete branch \"%s\"?", name)

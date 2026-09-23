@@ -1,10 +1,13 @@
 package git
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ── Data types ────────────────────────────────────────────────────────────────
@@ -51,9 +54,40 @@ type Remote struct {
 
 // ── Internal exec helper ──────────────────────────────────────────────────────
 
+// commandTimeout bounds how long any single git invocation may run. It's a
+// safety net, not a normal-operation limit — large pushes/clones should
+// finish well inside it — but it guarantees the TUI can never hang forever
+// waiting on a subprocess that's stuck (e.g. a credential helper or ssh
+// prompt that ignores the settings below and blocks on a tty read).
+const commandTimeout = 2 * time.Minute
+
 func run(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+
+	// Never let git or ssh fall back to an interactive credential prompt.
+	// gitgetter runs inside a full-screen Bubble Tea program that already
+	// owns the terminal, so a prompt has nowhere safe to go: git's own
+	// prompt fights bubbletea for stdin, and ssh's prompt (for passphrases
+	// or unknown host keys) opens /dev/tty *directly* — bypassing cmd.Stdin
+	// entirely — and can scribble raw text into the middle of the UI while
+	// stealing keystrokes from it. Disabling prompts turns a hang/corrupted
+	// screen into an ordinary error the app already knows how to surface.
+	cmd.Stdin = nil
+	cmd.Env = append(os.Environ(),
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_SSH_COMMAND=ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new",
+		"GIT_ASKPASS=",
+		"SSH_ASKPASS=",
+	)
+
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return strings.TrimSpace(string(out)),
+			fmt.Errorf("git %s timed out after %s (likely waiting on authentication)", args[0], commandTimeout)
+	}
 	return strings.TrimSpace(string(out)), err
 }
 
@@ -170,7 +204,12 @@ func GetLog(n int) ([]Commit, error) {
 // ── Branches ──────────────────────────────────────────────────────────────────
 
 func GetBranches() ([]Branch, error) {
-	out, err := run("branch", "-a", "--format=%(HEAD)|%(refname:short)|%(upstream:short)")
+	// %(refname) (the long form, e.g. "refs/remotes/origin/main") is what
+	// actually tells local and remote-tracking refs apart — %(refname:short)
+	// gives "origin/main" for both a real local branch named that and a
+	// remote-tracking ref, so a prefix check on the short name (the old
+	// approach) can never work.
+	out, err := run("branch", "-a", "--format=%(HEAD)|%(refname)|%(refname:short)|%(upstream:short)")
 	if err != nil {
 		return nil, err
 	}
@@ -179,17 +218,42 @@ func GetBranches() ([]Branch, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 3)
-		if len(parts) < 2 {
+		parts := strings.SplitN(line, "|", 4)
+		if len(parts) < 3 {
 			continue
 		}
-		b := Branch{Name: parts[1], IsCurrent: parts[0] == "*", IsRemote: strings.HasPrefix(parts[1], "remotes/")}
-		if len(parts) == 3 {
-			b.Upstream = parts[2]
+		fullRef, short := parts[1], parts[2]
+
+		// "origin/HEAD" is a symbolic alias for another entry already in
+		// this list (e.g. "origin/main") — it's not a real branch, and
+		// checking it out by name is meaningless, so skip it.
+		if strings.HasSuffix(fullRef, "/HEAD") {
+			continue
+		}
+
+		b := Branch{
+			Name:      short,
+			IsCurrent: parts[0] == "*",
+			IsRemote:  strings.HasPrefix(fullRef, "refs/remotes/"),
+		}
+		if len(parts) == 4 {
+			b.Upstream = parts[3]
 		}
 		branches = append(branches, b)
 	}
 	return branches, nil
+}
+
+// LocalNameForRemote strips the leading "<remote>/" from a remote-tracking
+// branch's short name (e.g. "origin/feature-x" -> "feature-x"). Passing the
+// result to CheckoutBranch lets git's own DWIM behavior create (or switch
+// to) a local tracking branch, instead of checking out the remote ref
+// directly and leaving HEAD detached.
+func LocalNameForRemote(remoteShortName string) string {
+	if idx := strings.Index(remoteShortName, "/"); idx != -1 {
+		return remoteShortName[idx+1:]
+	}
+	return remoteShortName
 }
 
 // ── Remotes ───────────────────────────────────────────────────────────────────

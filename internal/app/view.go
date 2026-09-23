@@ -115,6 +115,17 @@ func (m Model) View() string {
 		return ""
 	}
 
+	// Below this, layout math throughout the app (column widths, truncation,
+	// fixed-width dialogs) starts producing garbled or negative-width
+	// output. Bail out to a plain resize notice instead — checked before
+	// modals too, since the help/input/confirm dialogs are also
+	// fixed-width and would break the same way.
+	if m.width < minTermWidth || m.height < minTermHeight {
+		return lipgloss.Place(m.width, m.height,
+			lipgloss.Center, lipgloss.Center,
+			m.viewTooSmall())
+	}
+
 	// Full-screen modals via lipgloss.Place (no ANSI string splicing)
 	if m.showHelp {
 		return lipgloss.Place(m.width, m.height,
@@ -770,6 +781,37 @@ func (m Model) viewConfirmDialog() string {
 	actions := styles.HelpDesc.Render("y / ↵  yes  ·  any other key  cancel")
 	body := lipgloss.JoinVertical(lipgloss.Left, title, "", msg, "", actions)
 	return styles.ConfirmBox.Width(52).Render(body)
+}
+
+// ── Terminal too small ────────────────────────────────────────────────────────
+
+func (m Model) viewTooSmall() string {
+	body := strings.Join([]string{
+		styles.ConfirmTitle.Render("⚠  Terminal too small"),
+		"",
+		fmt.Sprintf("Current: %d × %d", m.width, m.height),
+		fmt.Sprintf("Need:    %d × %d", minTermWidth, minTermHeight),
+		"",
+		styles.Muted.Render("Resize your terminal to continue."),
+	}, "\n")
+
+	// A bordered/padded box needs a bit of room itself; below that, fall
+	// back to bare text so nothing overflows or wraps unpredictably on an
+	// extremely small terminal.
+	boxW := m.width - 4
+	if boxW > 44 {
+		boxW = 44
+	}
+	if boxW < 12 || m.height < 8 {
+		return fmt.Sprintf("Too small: %d×%d (need %d×%d)", m.width, m.height, minTermWidth, minTermHeight)
+	}
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(styles.AccentRed).
+		Padding(1, 2).
+		Width(boxW).
+		Render(body)
 }
 
 // ── Loading placeholder ───────────────────────────────────────────────────────
