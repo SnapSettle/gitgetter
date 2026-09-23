@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/SnapSettle/gitgetter/compare/v1.2.0...v1.2.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* correct template syntax for release message in .releaserc.json ([10660a8](https://github.com/SnapSettle/gitgetter/commit/10660a804fd64a750b36ded2ae0fcceb2cb169e6))
+
 # [1.2.0](https://github.com/SnapSettle/gitgetter/compare/v1.1.0...v1.2.0) (2026-09-23)
 
 
