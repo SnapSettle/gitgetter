@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/SnapSettle/gitgetter/compare/v1.0.1...v1.1.0) (2026-09-23)
+
+
+### Features
+
+* add @semantic-release/exec plugin for enhanced release process ([c75bfd0](https://github.com/SnapSettle/gitgetter/commit/c75bfd0a718c71ea36dc11ed1f0ca479f858d9f9))
+* add NotifyHint level for persistent contextual help and update styles ([fa1c807](https://github.com/SnapSettle/gitgetter/commit/fa1c807da10fbc81f193d004596af2d1916b1030))
+* implement terminal size checks and improve branch handling logic ([f8078a0](https://github.com/SnapSettle/gitgetter/commit/f8078a0bb27cbbc222e5d146b7ab68bd510385da))
+
 ## [1.0.1](https://github.com/SnapSettle/gitgetter/compare/v1.0.0...v1.0.1) (2026-09-18)
 
 ### Bug Fixes
