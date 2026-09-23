@@ -7,7 +7,12 @@
     [
       "@semantic-release/github",
       {
-        "assets": [{ "path": "dist/*" }]
+        "assets": [
+          { "path": "dist/gitgetter-linux-amd64", "label": "Linux AMD64 Binary" },
+          { "path": "dist/gitgetter-darwin-amd64", "label": "macOS AMD64 Binary" },
+          { "path": "dist/gitgetter-darwin-arm64", "label": "macOS ARM64 Binary" },
+          { "path": "dist/gitgetter-windows-amd64.exe", "label": "Windows AMD64 Binary" }
+        ]
       }
     ],
     [
