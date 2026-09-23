@@ -108,7 +108,7 @@ type (
 		text  string
 		level NotifyLevel
 	}
-	msgClearNote struct{ gen int }
+	msgClearNote    struct{ gen int }
 	msgStageAllDone struct{}
 )
 

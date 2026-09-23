@@ -1,10 +1,9 @@
 ## [1.0.1](https://github.com/SnapSettle/gitgetter/compare/v1.0.0...v1.0.1) (2026-09-18)
 
-
 ### Bug Fixes
 
-* **ci:** release actual go binaries ([041ae4e](https://github.com/SnapSettle/gitgetter/commit/041ae4e735f297ad378f72104bc5df871b893c75))
-* update binary output names to match repository name ([a7bb4fd](https://github.com/SnapSettle/gitgetter/commit/a7bb4fd6d57d7599ef4a0d8677535b00008cc4be))
+- **ci:** release actual go binaries ([041ae4e](https://github.com/SnapSettle/gitgetter/commit/041ae4e735f297ad378f72104bc5df871b893c75))
+- update binary output names to match repository name ([a7bb4fd](https://github.com/SnapSettle/gitgetter/commit/a7bb4fd6d57d7599ef4a0d8677535b00008cc4be))
 
 # 1.0.0 (2026-09-18)
 
