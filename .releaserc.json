@@ -5,21 +5,17 @@
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
     [
-      "@semantic-release/github",
+      "@semantic-release/exec",
       {
-        "assets": [
-          { "path": "dist/gitgetter-linux-amd64", "label": "Linux AMD64 Binary" },
-          { "path": "dist/gitgetter-darwin-amd64", "label": "macOS AMD64 Binary" },
-          { "path": "dist/gitgetter-darwin-arm64", "label": "macOS ARM64 Binary" },
-          { "path": "dist/gitgetter-windows-amd64.exe", "label": "Windows AMD64 Binary" }
-        ]
+        "prepareCmd": "sed -i 's/version = \".*\"/version = \"${nextRelease.version}\"/g' flake.nix && nix fmt"
       }
     ],
+    "@semantic-release/github",
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md"],
-        "message": "chore(release): {nextRelease.version} [skip ci]\n\n{nextRelease.notes}"
+        "assets": ["CHANGELOG.md", "flake.nix"],
+        "message": "chore(release): ({nextRelease.version} [skip ci]\n\n){nextRelease.notes}"
       }
     ]
   ]
