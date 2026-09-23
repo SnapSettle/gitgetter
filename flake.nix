@@ -14,7 +14,7 @@
         let
           pkgs = import nixpkgs { inherit system; };
 
-          # ── treefmt ────────────────────────────────────────────────────────
+          # Formatting
           treefmtEval = treefmt-nix.lib.evalModule pkgs {
             projectRootFile = "flake.nix";
             programs = {
@@ -24,7 +24,7 @@
             };
           };
 
-          # ── package ────────────────────────────────────────────────────────
+          # Package
           gitgetter = pkgs.buildGoModule rec {
             pname = "gitgetter";
             version = "1.0.0";
@@ -40,8 +40,6 @@
               mainProgram = "gitgetter";
             };
           };
-
-
         in
         {
           # `nix build`
