@@ -26,7 +26,7 @@
           # Package
           gitgetter = pkgs.buildGoModule rec {
             pname = "gitgetter";
-            version = "1.0.0";
+            version = "1.2.0";
             src = self;
 
             vendorHash = "sha256-FA/ttb1dwveAmEIrgOHepP349Q+ST4V0AR3dE8Ku7iE=";

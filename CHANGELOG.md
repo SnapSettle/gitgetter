@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/SnapSettle/gitgetter/compare/v1.1.0...v1.2.0) (2026-09-23)
+
+
+### Bug Fixes
+
+* correct syntax error in release message format in .releaserc.json ([a896a6a](https://github.com/SnapSettle/gitgetter/commit/a896a6aee1b6efc47b7d24c8fdf1cec3647dddda))
+* remove duplicate mention of github from releaserrc.json ([7444bc9](https://github.com/SnapSettle/gitgetter/commit/7444bc93868ce276ecb9d7a5422406d1b6e8610d))
+* remove prettier formatting option from flake.nix ([00b32b7](https://github.com/SnapSettle/gitgetter/commit/00b32b77076c34f915e93a20911f959b41b89109))
+
+
+### Features
+
+* specify asset paths and labels for GitHub releases in .releaserc.json ([bdc2c66](https://github.com/SnapSettle/gitgetter/commit/bdc2c668b68e0f4aca74124a7333e9c7c8c15b92))
+* update release configuration to enhance asset management and versioning ([2675a6b](https://github.com/SnapSettle/gitgetter/commit/2675a6bbeb1e33f7f3806ef0a392a760d1ea5fe9))
+
 # [1.1.0](https://github.com/SnapSettle/gitgetter/compare/v1.0.1...v1.1.0) (2026-09-23)
 
 
