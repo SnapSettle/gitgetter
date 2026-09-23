@@ -20,7 +20,6 @@
             programs = {
               gofmt.enable = true; # Go sources
               nixpkgs-fmt.enable = true; # Nix files
-              prettier.enable = true; # Markdown / YAML / JSON
             };
           };
 
